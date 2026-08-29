@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MisoPretty's Quant Desk</title>
+  <style>
+    :root {
+      --bg: #baf2ff;
+      --bg2: #f8d8f1;
+      --ink: #111;
+      --line: #121212;
+      --panel: #fff6ef;
+      --panel-2: #f6f0ff;
+      --accent: #ff67c4;
+      --accent-2: #67ffd6;
+      --accent-3: #ffe96f;
+      --accent-4: #86a8ff;
+      --shadow: 6px 6px 0 #111;
+      --radius: 18px;
+      --title-h: 34px;
+      --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      --font-display: "Arial Black", Impact, Haettenschweiler, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: var(--font-ui); color: var(--ink); }
+    body {
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05)),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+      background-attachment: fixed;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.25) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: .25;
+      pointer-events: none;
+    }
+    .desktop {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+    }
+    .taskbar {
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: 12px;
+      height: 58px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(10px);
+      border: 3px solid var(--line);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      box-shadow: var(--shadow);
+      z-index: 9999;
+    }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:900; letter-spacing:.02em; }
+    .brand-badge {
+      width: 36px; height: 36px; border-radius: 12px;
+      background: conic-gradient(from 210deg, #7bf1ff, #ffc1e3, #ffe49d, #7bf1ff);
+      border: 3px solid var(--line);
+      box-shadow: 3px 3px 0 #111;
+    }
+    .brand span { font-family: var(--font-display); font-size: 1.15rem; }
+    .task-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    button, input, select, textarea {
+      font: inherit;
+    }
+    .btn {
+      border: 3px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 12px;
+      box-shadow: 3px 3px 0 #111;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #111; }
+    .btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #111; }
+    .btn-primary { background: var(--accent); }
+    .btn-green { background: var(--accent-2); }
+    .btn-yellow { background: var(--accent-3); }
+    .btn-blue { background: var(--accent-4); }
+    .pill {
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,.7);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .window {
+      position: absolute;
+      min-width: 300px;
+      min-height: 180px;
+      background: rgba(255, 250, 244, 0.94);
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .window.hidden { display:none; }
+    .titlebar {
+      height: var(--title-h);
+      background: linear-gradient(90deg, #fff3a1, #ffc6e7, #cfe2ff);
+      border-bottom: 3px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px 6px 10px;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+    }
+    .title-left { display:flex; align-items:center; gap:8px; min-width:0; }
+    .title-icon {
+      width: 16px; height: 16px; border:2px solid var(--line); border-radius: 4px;
+      background: radial-gradient(circle at 30% 30%, #fff, #ffb5de 40%, #9eefff 70%, #fff7b2 100%);
+      flex: 0 0 auto;
+    }
+    .title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 900; letter-spacing:.08em; text-transform: uppercase; font-size: 12px; }
+    .controls { display:flex; gap:6px; }
+    .control {
+      width: 24px; height: 20px; border: 2px solid var(--line); border-radius: 6px;
+      background: #fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight: 900;
+      cursor:pointer;
+    }
+    .control:hover { background: #f0f0f0; }
+    .window-body {
+      padding: 12px;
+      overflow: auto;
+      flex: 1;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35)),
+        linear-gradient(180deg, var(--panel), var(--panel-2));
+    }
+    .window-body::-webkit-scrollbar { width: 12px; height: 12px; }
+    .window-body::-webkit-scrollbar-thumb { background: #ddd; border:2px solid var(--line); border-radius: 10px; }
+    .kpi-grid, .grid-2, .grid-3, .grid-4 {
+      display: grid; gap: 10px;
+    }
+    .kpi-grid, .grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .card {
+      border: 3px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.84);
+      padding: 10px;
+      box-shadow: 3px 3px 0 #111;
+    }
+    .card h3, .card h4 { margin: 0 0 8px; }
+    .tiny { font-size: 12px; }
+    .muted { color:#444; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .value { font-size: 1.45rem; font-weight: 900; }
+    .table-wrap { overflow:auto; border: 3px solid var(--line); border-radius: 12px; background:#fff; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 2px solid #ddd; text-align: left; font-size: 13px; }
+    th { background:#f7f7f7; position: sticky; top:0; }
+    .status-ok { color: #0a7a52; font-weight: 900; }
+    .status-bad { color: #bf2655; font-weight: 900; }
+    .status-warn { color: #8a6200; font-weight: 900; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .col { display:flex; flex-direction:column; gap:8px; }
+    .field { display:flex; flex-direction:column; gap:4px; }
+    label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      border: 3px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+      box-shadow: inset 2px 2px 0 rgba(0,0,0,.06);
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 10px; }
+    .tab { padding: 6px 10px; border: 3px solid var(--line); border-radius: 999px; background:#fff; font-weight:800; cursor:pointer; }
+    .tab.active { background: var(--accent-2); }
+    .log {
+      background: #111; color: #c8ffda; border-radius: 14px; border:3px solid var(--line); padding: 10px;
+      height: 260px; overflow: auto; font-family: ui-monospace, monospace; font-size: 12px;
+    }
+    .tree { font-size: 13px; line-height: 1.5; }
+    .tree li { margin-bottom: 4px; }
+    .badge { display:inline-block; padding: 4px 8px; border-radius:999px; border:2px solid var(--line); background:#fff; font-size:12px; font-weight:800; }
+    .split { display:grid; grid-template-columns: 1.3fr .9fr; gap:10px; }
+    .progress {
+      width: 100%; height: 16px; border:3px solid var(--line); border-radius: 999px; overflow: hidden; background:#fff;
+    }
+    .progress > span { display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .toast {
+      position: fixed; right: 24px; top: 24px; z-index: 10000;
+      background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow);
+      max-width: 360px;
+    }
+    .small-list { list-style: none; padding: 0; margin: 0; display:flex; flex-direction:column; gap:8px; }
+    .small-list li { border:2px solid #ddd; border-radius: 10px; padding: 8px; background:#fff; }
+    .desktop-note {
+      position:absolute; right: 26px; top: 22px; width: 280px;
+      background: rgba(255,255,255,.72); border:3px solid var(--line); border-radius:18px; padding: 12px; box-shadow: var(--shadow);
+      z-index: 2;
+    }
+    .desktop-note h1 { margin:0 0 8px; font-family: var(--font-display); font-size: 1.5rem; line-height: 1; }
+    .footer-note { font-size: 12px; }
+    @media (max-width: 980px) {
+      .kpi-grid, .grid-4, .grid-3, .grid-2, .split { grid-template-columns: 1fr; }
+      .desktop-note { display:none; }
+      .taskbar { height:auto; min-height:58px; padding-bottom:10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop" id="desktop">
+    <div class="desktop-note card">
+      <h1>MisoPretty's Quant Desk</h1>
+      <div class="tiny muted">Retro movable-window control room. Real data only. Crypto feed works out of the box via CoinGecko. Equities and commodities work with your own real API keys. No demo keys are used.</div>
+    </div>
+
+    <section class="window" id="win-mission" style="left: 18px; top: 18px; width: 520px; height: 360px; z-index: 11;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Mission Control</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+          <div>
+            <div class="value">Desk Operating System</div>
+            <div class="tiny muted">Build order completed into a first working interface: operating graph, canonical data model, approval gate, real feeds, paper lab, capital/risk, registry, audit.</div>
+          </div>
+          <div class="col">
+            <button class="btn btn-primary" id="refreshAllBtn">Refresh live sources</button>
+            <button class="btn btn-yellow" id="resetLayoutBtn">Reset window layout</button>
+          </div>
+        </div>
+        <div class="kpi-grid" style="margin-bottom:10px;">
+          <div class="card"><div class="tiny muted">Live source status</div><div class="value" id="liveStatus">Ready</div></div>
+          <div class="card"><div class="tiny muted">Registry entries</div><div class="value" id="registryCount">0</div></div>
+          <div class="card"><div class="tiny muted">Audit events</div><div class="value" id="auditCount">0</div></div>
+          <div class="card"><div class="tiny muted">Spawn approvals</div><div class="value" id="approvalCount">0</div></div>
+        </div>
+        <div class="split">
+          <div class="card">
+            <h3>Operating graph</h3>
+            <ol class="tree">
+              <li>Ingest real sources</li>
+              <li>Normalize into canonical signal objects</li>
+              <li>Build thesis and forecast packet</li>
+              <li>Run validation, sizing, and risk checks</li>
+              <li>Supervising Quant approval gate</li>
+              <li>Spawn strategy pod or reject</li>
+              <li>Paper-trade or live-route after criteria pass</li>
+              <li>Record evidence, attribution, and lessons</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Action buttons</h3>
+            <div class="col">
+              <button class="btn btn-green" id="openAllBtn">Open all windows</button>
+              <button class="btn btn-blue" id="saveStateBtn">Save local state</button>
+              <button class="btn" id="seedRegistryBtn">Create strategy packet</button>
+              <button class="btn" id="spawnFromApprovalBtn">Spawn approved pod</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="window" id="win-settings" style="left: 560px; top: 18px; width: 430px; height: 340px; z-index: 12;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Source Settings</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="card" style="margin-bottom:10px;">
+          <h3>Real-source policy</h3>
+          <div class="tiny muted">This desk does not ship with demo keys. Crypto loads from CoinGecko. SEC company data uses the official SEC JSON endpoints. Equities and commodities become live when you add your own real API keys below.</div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>Finnhub API key (equities/options/news)</label><input type="text" id="finnhubKey" placeholder="Paste your real Finnhub key" /></div>
+          <div class="field"><label>Alpha Vantage key (equities/commodities FX)</label><input type="text" id="alphaKey" placeholder="Paste your real Alpha Vantage key" /></div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn btn-primary" id="saveKeysBtn">Save keys</button>
+          <button class="btn" id="testSourcesBtn">Test configured sources</button>
+        </div>
+        <div class="table-wrap" style="margin-top:12px;">
+          <table>
+            <thead><tr><th>Source</th><th>Mode</th><th>Status</th></tr></thead>
+            <tbody id="sourceTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="window" id="win-markets" style="left: 18px; top: 394px; width: 620px; height: 370px; z-index: 10;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Live Markets</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="tabs">
+          <button class="tab active" data-market-tab="crypto">Crypto</button>
+          <button class="tab" data-market-tab="equity">Equities</button>
+          <button class="tab" data-market-tab="commodity">Commodities</button>
+        </div>
+        <div id="marketPanel"></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-sources" style="left: 656px; top: 374px; width: 510px; height: 390px; z-index: 9;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Direct Sources / Filings</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="row" style="margin-bottom:10px;">
+          <div class="field" style="flex:1"><label>Ticker for SEC lookup</label><input type="text" id="secTicker" value="AAPL" /></div>
+          <button class="btn btn-blue" id="loadSecBtn" style="align-self:flex-end;">Load official SEC facts</button>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>SEC company summary</h3>
+            <div id="secSummary" class="tiny muted">Load a ticker to query the official SEC company ticker map and company facts JSON.</div>
+          </div>
+          <div class="card">
+            <h3>Pasted-source NLP analyzer</h3>
+            <div class="tiny muted">Paste a real speech excerpt, filing text, or statement below. The parser scores directional keywords and writes a signal packet.</div>
+          </div>
+        </div>
+        <div class="field" style="margin-top:10px;"><label>Direct source text</label><textarea id="sourceText" placeholder="Paste a real filing excerpt, speech, or statement here..."></textarea></div>
+        <div class="row" style="margin-top:10px;"><button class="btn btn-green" id="analyzeTextBtn">Analyze source text</button><span class="badge" id="nlpScoreBadge">No analysis yet</span></div>
+        <div class="card" style="margin-top:10px;"><h3>Signal packet</h3><div id="nlpOutput" class="tiny muted">No packet built yet.</div></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-paper" style="left: 1188px; top: 18px; width: 420px; height: 360px; z-index: 8;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Paper Lab</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="grid-2">
+          <div class="field"><label>Asset (CoinGecko id)</label><input type="text" id="paperAsset" value="bitcoin" /></div>
+          <div class="field"><label>Lookback days</label><input type="number" id="paperDays" value="90" min="30" max="365" /></div>
+        </div>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="field"><label>Fast MA</label><input type="number" id="paperFast" value="10" min="2" max="120" /></div>
+          <div class="field"><label>Slow MA</label><input type="number" id="paperSlow" value="30" min="5" max="240" /></div>
+        </div>
+        <div class="row" style="margin-top:10px;"><button class="btn btn-primary" id="runPaperBtn">Run real-data paper test</button><span class="badge" id="paperStatus">Idle</span></div>
+        <div class="card" style="margin-top:10px;"><h3>Results</h3><div id="paperResults" class="tiny muted">Uses real CoinGecko historical price data. No simulated source feed.</div></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-capital" style="left: 1188px; top: 398px; width: 420px; height: 366px; z-index: 7;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Capital / Risk Engine</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="grid-2">
+          <div class="field"><label>Total capital ($)</label><input type="number" id="capCapital" value="10000" min="100" step="100" /></div>
+          <div class="field"><label>Risk per trade (%)</label><input type="number" id="capRiskPct" value="1" min="0.1" step="0.1" /></div>
+        </div>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="field"><label>Entry</label><input type="number" id="capEntry" value="65000" step="0.01" /></div>
+          <div class="field"><label>Stop</label><input type="number" id="capStop" value="62000" step="0.01" /></div>
+        </div>
+        <div class="field" style="margin-top:10px;"><label>Position label</label><input type="text" id="capLabel" value="BTC breakout candidate" /></div>
+        <div class="row" style="margin-top:10px;"><button class="btn btn-green" id="calcSizeBtn">Calculate exact size</button><button class="btn" id="pushApprovalBtn">Send to approval gate</button></div>
+        <div class="card" style="margin-top:10px;"><h3>Position sizing output</h3><div id="capResults" class="tiny muted">Risk engine computes maximum units and dollar exposure from the stop distance and risk budget.</div></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-approval" style="left: 1630px; top: 18px; width: 390px; height: 360px; z-index: 6;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Supervising Quant Gate</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="card">
+          <h3>Approval protocol</h3>
+          <ul class="tree">
+            <li><input type="checkbox" id="chkEvidence"> Evidence packet attached</li>
+            <li><input type="checkbox" id="chkValidation"> Validation / paper test passed</li>
+            <li><input type="checkbox" id="chkRisk"> Position sizing and tail checks passed</li>
+            <li><input type="checkbox" id="chkCompliance"> Compliance and market-structure constraints passed</li>
+            <li><input type="checkbox" id="chkData"> Data lineage and source quality confirmed</li>
+          </ul>
+          <div class="row"><button class="btn btn-primary" id="approveBtn">Approve & mark spawnable</button><button class="btn" id="rejectBtn">Reject packet</button></div>
+        </div>
+        <div class="card" style="margin-top:10px;"><h3>Gate state</h3><div id="approvalState" class="tiny muted">No pending packet.</div></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-registry" style="left: 1630px; top: 398px; width: 390px; height: 366px; z-index: 5;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Strategy Registry</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="row" style="margin-bottom:10px;"><button class="btn btn-blue" id="exportRegistryBtn">Export registry JSON</button><button class="btn" id="clearRegistryBtn">Clear registry</button></div>
+        <div id="registryList" class="col"></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-audit" style="left: 540px; top: 780px; width: 880px; height: 250px; z-index: 4;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Audit & Memory</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="row" style="margin-bottom:10px;"><button class="btn" id="clearAuditBtn">Clear audit log</button><button class="btn" id="saveStateBtn2">Save state snapshot</button></div>
+        <div class="log" id="auditLog"></div>
+      </div>
+    </section>
+
+    <section class="window" id="win-model" style="left: 18px; top: 780px; width: 500px; height: 250px; z-index: 3;">
+      <div class="titlebar"><div class="title-left"><div class="title-icon"></div><div class="title-text">Canonical Data Model</div></div><div class="controls"><div class="control" data-action="min">_</div><div class="control" data-action="close">×</div></div></div>
+      <div class="window-body">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Object</th><th>Core fields</th></tr></thead>
+            <tbody>
+              <tr><td>Signal</td><td class="tiny mono">source, asset, direction, score, timestamp, evidence</td></tr>
+              <tr><td>Thesis</td><td class="tiny mono">label, rationale, catalyst, horizon, invalidation</td></tr>
+              <tr><td>Forecast</td><td class="tiny mono">base_case, bull_case, bear_case, confidence</td></tr>
+              <tr><td>Strategy</td><td class="tiny mono">entry_rule, exit_rule, risk_rule, venue, status</td></tr>
+              <tr><td>ApprovalPacket</td><td class="tiny mono">evidence, validation, risk, compliance, decision</td></tr>
+              <tr><td>Position</td><td class="tiny mono">size, entry, stop, pnl, tags</td></tr>
+              <tr><td>ReviewRecord</td><td class="tiny mono">outcome, errors, lessons, attribution</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="taskbar">
+    <div class="brand"><div class="brand-badge"></div><span>MisoPretty's Quant Desk</span><span class="pill" id="clockPill"></span></div>
+    <div class="task-actions">
+      <button class="btn btn-primary" id="showMission">Mission</button>
+      <button class="btn" id="showMarkets">Markets</button>
+      <button class="btn" id="showSources">Sources</button>
+      <button class="btn" id="showPaper">Paper Lab</button>
+      <button class="btn" id="showRisk">Capital</button>
+      <button class="btn" id="showApproval">Approval</button>
+      <button class="btn btn-yellow" id="taskReset">Reset Layout</button>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_LAYOUT = {
+      'win-mission': { left: 18, top: 18, width: 520, height: 360 },
+      'win-settings': { left: 560, top: 18, width: 430, height: 340 },
+      'win-markets': { left: 18, top: 394, width: 620, height: 370 },
+      'win-sources': { left: 656, top: 374, width: 510, height: 390 },
+      'win-paper': { left: 1188, top: 18, width: 420, height: 360 },
+      'win-capital': { left: 1188, top: 398, width: 420, height: 366 },
+      'win-approval': { left: 1630, top: 18, width: 390, height: 360 },
+      'win-registry': { left: 1630, top: 398, width: 390, height: 366 },
+      'win-audit': { left: 540, top: 780, width: 880, height: 250 },
+      'win-model': { left: 18, top: 780, width: 500, height: 250 },
+    };
+
+    const state = {
+      z: 20,
+      keys: JSON.parse(localStorage.getItem('mpqd_keys') || '{}'),
+      registry: JSON.parse(localStorage.getItem('mpqd_registry') || '[]'),
+      audit: JSON.parse(localStorage.getItem('mpqd_audit') || '[]'),
+      approvals: JSON.parse(localStorage.getItem('mpqd_approvals') || '[]'),
+      layout: JSON.parse(localStorage.getItem('mpqd_layout') || '{}'),
+      marketTab: 'crypto',
+      pendingPacket: null,
+      latestSizing: null,
+      latestPaper: null,
+      secCache: null,
+      crypto: [],
+    };
+
+    const windows = [...document.querySelectorAll('.window')];
+    const sourceConfigs = [
+      { key: 'coingecko', label: 'CoinGecko', type: 'Direct', live: true },
+      { key: 'sec', label: 'SEC EDGAR JSON', type: 'Direct', live: true },
+      { key: 'finnhub', label: 'Finnhub', type: 'User key required', live: () => !!state.keys.finnhub },
+      { key: 'alpha', label: 'Alpha Vantage', type: 'User key required', live: () => !!state.keys.alpha },
+    ];
+
+    function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+    function audit(event, detail = '') {
+      const line = `[${new Date().toLocaleTimeString()}] ${event}${detail ? ' :: ' + detail : ''}`;
+      state.audit.unshift(line);
+      state.audit = state.audit.slice(0, 300);
+      saveJson('mpqd_audit', state.audit);
+      renderAudit();
+      updateMissionKPIs();
+    }
+    function updateMissionKPIs() {
+      document.getElementById('registryCount').textContent = state.registry.length;
+      document.getElementById('auditCount').textContent = state.audit.length;
+      document.getElementById('approvalCount').textContent = state.approvals.filter(a => a.status === 'approved').length;
+    }
+    function renderAudit() {
+      const log = document.getElementById('auditLog');
+      log.textContent = state.audit.join('\n');
+    }
+    function syncClock() {
+      document.getElementById('clockPill').textContent = new Date().toLocaleString();
+    }
+    setInterval(syncClock, 1000); syncClock();
+
+    function sourceStatusRows() {
+      return sourceConfigs.map(cfg => {
+        const ok = typeof cfg.live === 'function' ? cfg.live() : cfg.live;
+        return `<tr><td>${cfg.label}</td><td>${cfg.type}</td><td class="${ok ? 'status-ok' : 'status-warn'}">${ok ? 'Configured / available' : 'Waiting for real key'}</td></tr>`;
+      }).join('');
+    }
+    function renderSources() {
+      document.getElementById('sourceTable').innerHTML = sourceStatusRows();
+      document.getElementById('finnhubKey').value = state.keys.finnhub || '';
+      document.getElementById('alphaKey').value = state.keys.alpha || '';
+    }
+
+    function bringToFront(win) { state.z += 1; win.style.zIndex = state.z; }
+
+    function applyLayout() {
+      windows.forEach(win => {
+        const id = win.id;
+        const frame = state.layout[id] || DEFAULT_LAYOUT[id];
+        if (!frame) return;
+        win.style.left = frame.left + 'px';
+        win.style.top = frame.top + 'px';
+        win.style.width = frame.width + 'px';
+        win.style.height = frame.height + 'px';
+      });
+    }
+
+    function saveLayout() {
+      windows.forEach(win => {
+        state.layout[win.id] = {
+          left: parseInt(win.style.left, 10),
+          top: parseInt(win.style.top, 10),
+          width: parseInt(win.style.width, 10),
+          height: parseInt(win.style.height, 10),
+        };
+      });
+      saveJson('mpqd_layout', state.layout);
+    }
+
+    function resetLayout() {
+      state.layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+      saveJson('mpqd_layout', state.layout);
+      windows.forEach(w => w.classList.remove('hidden'));
+      applyLayout();
+      audit('Layout reset', 'all windows returned to original positions');
+      toast('Window layout reset');
+    }
+
+    windows.forEach(win => {
+      bringToFront(win);
+      win.addEventListener('pointerdown', () => bringToFront(win));
+      const bar = win.querySelector('.titlebar');
+      let startX, startY, startLeft, startTop, dragging = false;
+      bar.addEventListener('pointerdown', (e) => {
+        if (e.target.classList.contains('control')) return;
+        dragging = true;
+        bringToFront(win);
+        startX = e.clientX; startY = e.clientY;
+        startLeft = parseInt(win.style.left, 10) || win.offsetLeft;
+        startTop = parseInt(win.style.top, 10) || win.offsetTop;
+        bar.setPointerCapture(e.pointerId);
+      });
+      bar.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        win.style.left = Math.max(0, startLeft + dx) + 'px';
+        win.style.top = Math.max(0, startTop + dy) + 'px';
+      });
+      bar.addEventListener('pointerup', () => { dragging = false; saveLayout(); });
+      win.querySelectorAll('.control').forEach(ctrl => {
+        ctrl.addEventListener('click', () => {
+          const action = ctrl.dataset.action;
+          if (action === 'close') win.classList.add('hidden');
+          if (action === 'min') {
+            const body = win.querySelector('.window-body');
+            body.style.display = body.style.display === 'none' ? '' : 'none';
+            const h = body.style.display === 'none' ? 42 : (DEFAULT_LAYOUT[win.id]?.height || 300);
+            win.style.height = h + 'px';
+            saveLayout();
+          }
+        });
+      });
+    });
+
+    applyLayout();
+
+    function showWindow(id) {
+      const win = document.getElementById(id);
+      win.classList.remove('hidden');
+      bringToFront(win);
+    }
+    document.getElementById('showMission').onclick = () => showWindow('win-mission');
+    document.getElementById('showMarkets').onclick = () => showWindow('win-markets');
+    document.getElementById('showSources').onclick = () => showWindow('win-sources');
+    document.getElementById('showPaper').onclick = () => showWindow('win-paper');
+    document.getElementById('showRisk').onclick = () => showWindow('win-capital');
+    document.getElementById('showApproval').onclick = () => showWindow('win-approval');
+    document.getElementById('taskReset').onclick = resetLayout;
+    document.getElementById('resetLayoutBtn').onclick = resetLayout;
+    document.getElementById('openAllBtn').onclick = () => { windows.forEach(w => w.classList.remove('hidden')); audit('Open all windows'); };
+
+    function renderRegistry() {
+      const box = document.getElementById('registryList');
+      if (!state.registry.length) {
+        box.innerHTML = '<div class="card tiny muted">No strategy packets yet.</div>';
+        updateMissionKPIs();
+        return;
+      }
+      box.innerHTML = state.registry.map((item, idx) => `
+        <div class="card">
+          <div class="row" style="justify-content:space-between"><strong>${item.label}</strong><span class="badge">v${item.version}</span></div>
+          <div class="tiny muted">${item.asset} • ${item.status} • ${item.origin}</div>
+          <div class="tiny mono">${item.summary || ''}</div>
+          <div class="row" style="margin-top:8px;"><button class="btn" onclick="window.MPQD.bumpVersion(${idx})">New version</button><button class="btn" onclick="window.MPQD.copyPacket(${idx})">Copy JSON</button></div>
+        </div>`).join('');
+      updateMissionKPIs();
+    }
+
+    window.MPQD = {
+      bumpVersion(idx) {
+        const item = state.registry[idx];
+        item.version += 1;
+        item.status = 'revised';
+        saveJson('mpqd_registry', state.registry);
+        audit('Registry version bump', `${item.label} -> v${item.version}`);
+        renderRegistry();
+      },
+      copyPacket(idx) {
+        navigator.clipboard.writeText(JSON.stringify(state.registry[idx], null, 2));
+        toast('Strategy packet copied');
+      }
+    };
+
+    function seedRegistry(label = 'New signal-driven packet', asset = 'bitcoin', summary = 'Seeded from Mission Control') {
+      const packet = {
+        id: crypto.randomUUID(),
+        label,
+        asset,
+        status: 'draft',
+        version: 1,
+        origin: 'mission-control',
+        summary,
+        createdAt: new Date().toISOString(),
+      };
+      state.registry.unshift(packet);
+      saveJson('mpqd_registry', state.registry);
+      renderRegistry();
+      audit('Registry packet created', label);
+      return packet;
+    }
+
+    document.getElementById('seedRegistryBtn').onclick = () => { seedRegistry(); toast('Draft packet created'); };
+    document.getElementById('exportRegistryBtn').onclick = () => {
+      const blob = new Blob([JSON.stringify(state.registry, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'misopretty_quant_desk_registry.json'; a.click();
+      audit('Registry export');
+    };
+    document.getElementById('clearRegistryBtn').onclick = () => {
+      if (!confirm('Clear the registry?')) return;
+      state.registry = []; saveJson('mpqd_registry', state.registry); renderRegistry(); audit('Registry cleared');
+    };
+    document.getElementById('clearAuditBtn').onclick = () => { if (!confirm('Clear audit log?')) return; state.audit = []; saveJson('mpqd_audit', state.audit); renderAudit(); updateMissionKPIs(); };
+
+    document.getElementById('saveKeysBtn').onclick = () => {
+      state.keys.finnhub = document.getElementById('finnhubKey').value.trim();
+      state.keys.alpha = document.getElementById('alphaKey').value.trim();
+      saveJson('mpqd_keys', state.keys);
+      renderSources();
+      audit('Source keys saved');
+      toast('Real API keys saved locally');
+    };
+    document.getElementById('testSourcesBtn').onclick = async () => {
+      renderSources();
+      audit('Source test requested');
+      toast('Source status refreshed');
+    };
+
+    function setLiveStatus(text) { document.getElementById('liveStatus').textContent = text; }
+
+    async function loadCryptoMarkets() {
+      const panel = document.getElementById('marketPanel');
+      panel.innerHTML = '<div class="card tiny muted">Loading real CoinGecko market data…</div>';
+      try {
+        const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=12&page=1&sparkline=false&price_change_percentage=24h';
+        const res = await fetch(url, { headers: { 'accept': 'application/json' }});
+        if (!res.ok) throw new Error('CoinGecko request failed');
+        state.crypto = await res.json();
+        panel.innerHTML = `
+          <div class="table-wrap"><table>
+            <thead><tr><th>Coin</th><th>Price</th><th>24h</th><th>Mkt Cap</th></tr></thead>
+            <tbody>${state.crypto.map(c => `<tr><td>${c.name} <span class="tiny muted">${c.symbol.toUpperCase()}</span></td><td>$${Number(c.current_price).toLocaleString()}</td><td class="${c.price_change_percentage_24h >= 0 ? 'status-ok' : 'status-bad'}">${Number(c.price_change_percentage_24h || 0).toFixed(2)}%</td><td>$${Number(c.market_cap || 0).toLocaleString()}</td></tr>`).join('')}</tbody>
+          </table></div>`;
+        setLiveStatus('Crypto live');
+        audit('Crypto markets refreshed', `${state.crypto.length} assets from CoinGecko`);
+      } catch (err) {
+        panel.innerHTML = `<div class="card"><strong>Crypto source error</strong><div class="tiny muted">${err.message}</div></div>`;
+        setLiveStatus('Source issue');
+        audit('Crypto refresh failed', err.message);
+      }
+    }
+
+    async function loadFinnhubQuote(symbol) {
+      if (!state.keys.finnhub) throw new Error('Finnhub key required');
+      const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${encodeURIComponent(state.keys.finnhub)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Finnhub request failed');
+      return res.json();
+    }
+    async function loadAlphaSeries(symbol, fn = 'GLOBAL_QUOTE') {
+      if (!state.keys.alpha) throw new Error('Alpha Vantage key required');
+      const url = `https://www.alphavantage.co/query?function=${fn}&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(state.keys.alpha)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Alpha Vantage request failed');
+      return res.json();
+    }
+
+    async function renderMarketTab() {
+      const panel = document.getElementById('marketPanel');
+      const tab = state.marketTab;
+      if (tab === 'crypto') return loadCryptoMarkets();
+      if (tab === 'equity') {
+        panel.innerHTML = '<div class="card tiny muted">Loading real equity quotes…</div>';
+        try {
+          const symbols = ['AAPL','MSFT','NVDA','SPY'];
+          const rows = [];
+          for (const symbol of symbols) {
+            const q = await loadFinnhubQuote(symbol);
+            rows.push({ symbol, price: q.c, changePct: q.dp, high: q.h, low: q.l });
+          }
+          panel.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Symbol</th><th>Price</th><th>%</th><th>High</th><th>Low</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.symbol}</td><td>$${Number(r.price).toFixed(2)}</td><td class="${r.changePct >= 0 ? 'status-ok' : 'status-bad'}">${Number(r.changePct).toFixed(2)}%</td><td>$${Number(r.high).toFixed(2)}</td><td>$${Number(r.low).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>`;
+          audit('Equity quotes refreshed', 'Finnhub');
+        } catch (err) {
+          panel.innerHTML = `<div class="card"><h3>Equity feed unavailable</h3><div class="tiny muted">${err.message}. Add your own real Finnhub key in Source Settings.</div></div>`;
+        }
+        return;
+      }
+      if (tab === 'commodity') {
+        panel.innerHTML = '<div class="card tiny muted">Loading commodity references…</div>';
+        try {
+          const gold = await loadAlphaSeries('GLD');
+          const oil = await loadAlphaSeries('USO');
+          const getQuote = (obj) => obj['Global Quote'] || {};
+          const g = getQuote(gold), o = getQuote(oil);
+          panel.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Proxy</th><th>Price</th><th>Change</th></tr></thead><tbody>
+            <tr><td>GLD (gold ETF proxy)</td><td>$${Number(g['05. price'] || 0).toFixed(2)}</td><td class="${Number(g['10. change percent']?.replace('%','') || 0) >= 0 ? 'status-ok' : 'status-bad'}">${g['10. change percent'] || 'n/a'}</td></tr>
+            <tr><td>USO (oil ETF proxy)</td><td>$${Number(o['05. price'] || 0).toFixed(2)}</td><td class="${Number(o['10. change percent']?.replace('%','') || 0) >= 0 ? 'status-ok' : 'status-bad'}">${o['10. change percent'] || 'n/a'}</td></tr>
+          </tbody></table></div><div class="tiny muted" style="margin-top:8px;">Uses real Alpha Vantage data for tradeable proxies. Add your own real key in Source Settings.</div>`;
+          audit('Commodity proxies refreshed', 'Alpha Vantage');
+        } catch (err) {
+          panel.innerHTML = `<div class="card"><h3>Commodity feed unavailable</h3><div class="tiny muted">${err.message}. Add your own real Alpha Vantage key in Source Settings.</div></div>`;
+        }
+      }
+    }
+    document.querySelectorAll('[data-market-tab]').forEach(btn => btn.onclick = () => {
+      document.querySelectorAll('[data-market-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.marketTab = btn.dataset.marketTab;
+      renderMarketTab();
+    });
+
+    async function fetchSecFacts(ticker) {
+      const mapUrl = 'https://www.sec.gov/files/company_tickers.json';
+      const mapRes = await fetch(mapUrl, { headers: { 'accept': 'application/json' } });
+      if (!mapRes.ok) throw new Error('SEC ticker map request failed');
+      const mapping = await mapRes.json();
+      const normalized = ticker.trim().toUpperCase();
+      const entry = Object.values(mapping).find(v => (v.ticker || '').toUpperCase() === normalized);
+      if (!entry) throw new Error('Ticker not found in SEC map');
+      const cik = String(entry.cik_str).padStart(10, '0');
+      const factsUrl = `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`;
+      const factsRes = await fetch(factsUrl, { headers: { 'accept': 'application/json' } });
+      if (!factsRes.ok) throw new Error('SEC companyfacts request failed');
+      const facts = await factsRes.json();
+      return { entry, cik, facts };
+    }
+
+    document.getElementById('loadSecBtn').onclick = async () => {
+      const ticker = document.getElementById('secTicker').value.trim();
+      const target = document.getElementById('secSummary');
+      target.innerHTML = '<div class="tiny muted">Loading official SEC JSON…</div>';
+      try {
+        const data = await fetchSecFacts(ticker);
+        state.secCache = data;
+        const usGaap = data.facts?.facts?.['us-gaap'] || {};
+        const revenue = usGaap.Revenues || usGaap.RevenueFromContractWithCustomerExcludingAssessedTax || null;
+        const assets = usGaap.Assets || null;
+        const latestValue = (obj) => {
+          const units = obj?.units || {};
+          const usd = units.USD || Object.values(units)[0] || [];
+          const sorted = [...usd].filter(x => x.val != null).sort((a,b) => new Date(b.end || b.fy || 0) - new Date(a.end || a.fy || 0));
+          return sorted[0];
+        };
+        const rev = latestValue(revenue);
+        const ast = latestValue(assets);
+        target.innerHTML = `
+          <div><strong>${data.entry.title}</strong></div>
+          <div class="tiny muted">Ticker ${data.entry.ticker} • CIK ${data.cik}</div>
+          <div class="tiny" style="margin-top:8px;">Latest revenue fact: <span class="mono">${rev ? Number(rev.val).toLocaleString() : 'n/a'}</span></div>
+          <div class="tiny">Latest assets fact: <span class="mono">${ast ? Number(ast.val).toLocaleString() : 'n/a'}</span></div>
+          <div class="tiny muted" style="margin-top:8px;">Source: official SEC EDGAR JSON.</div>`;
+        audit('SEC facts loaded', ticker.toUpperCase());
+      } catch (err) {
+        target.innerHTML = `<div class="status-bad">${err.message}</div><div class="tiny muted">If your browser blocks SEC requests from a local file context, serve this file over a simple local web server.</div>`;
+        audit('SEC facts failed', err.message);
+      }
+    };
+
+    function analyzeText(text) {
+      const cleaned = text.trim();
+      if (!cleaned) return null;
+      const upWords = ['beat','beats','strong','growth','accelerate','bullish','surplus','expansion','approve','approved','cut rates','stimulus','upgrade','buyback','record'];
+      const downWords = ['miss','weak','decline','downside','bearish','recession','downgrade','lawsuit','inflation','tightening','cut guidance','default','war','investigation'];
+      const words = cleaned.toLowerCase();
+      const up = upWords.reduce((n,w) => n + (words.split(w).length - 1), 0);
+      const down = downWords.reduce((n,w) => n + (words.split(w).length - 1), 0);
+      const score = up - down;
+      const direction = score > 0 ? 'positive / risk-on bias' : score < 0 ? 'negative / risk-off bias' : 'mixed / neutral';
+      const catalystTags = [];
+      ['earnings','guidance','inflation','rates','tariff','supply','ai','oil','bitcoin','regulation','merger'].forEach(tag => {
+        if (words.includes(tag)) catalystTags.push(tag);
+      });
+      return { score, direction, up, down, catalystTags, snippet: cleaned.slice(0, 280) };
+    }
+
+    document.getElementById('analyzeTextBtn').onclick = () => {
+      const text = document.getElementById('sourceText').value;
+      const result = analyzeText(text);
+      if (!result) { toast('Paste real source text first'); return; }
+      document.getElementById('nlpScoreBadge').textContent = `Score ${result.score} • ${result.direction}`;
+      document.getElementById('nlpOutput').innerHTML = `
+        <div><strong>Directional bias:</strong> ${result.direction}</div>
+        <div class="tiny">Positive cues: ${result.up} • Negative cues: ${result.down}</div>
+        <div class="tiny">Catalyst tags: ${result.catalystTags.length ? result.catalystTags.join(', ') : 'none detected'}</div>
+        <div class="tiny mono" style="margin-top:8px;">${result.snippet.replace(/[<>]/g,'')}</div>`;
+      const packet = seedRegistry('NLP signal packet', result.catalystTags[0] || 'unspecified', `${result.direction}; score ${result.score}`);
+      packet.origin = 'pasted-direct-source';
+      packet.summary = `Bias ${result.direction}; tags ${result.catalystTags.join(', ') || 'none'}`;
+      packet.signal = result;
+      saveJson('mpqd_registry', state.registry);
+      renderRegistry();
+      audit('NLP signal packet built', result.direction);
+    };
+
+    function sma(arr, len, idx) {
+      if (idx + 1 < len) return null;
+      let sum = 0; for (let i = idx - len + 1; i <= idx; i++) sum += arr[i];
+      return sum / len;
+    }
+    document.getElementById('runPaperBtn').onclick = async () => {
+      const asset = document.getElementById('paperAsset').value.trim();
+      const days = Number(document.getElementById('paperDays').value);
+      const fast = Number(document.getElementById('paperFast').value);
+      const slow = Number(document.getElementById('paperSlow').value);
+      const status = document.getElementById('paperStatus');
+      const out = document.getElementById('paperResults');
+      status.textContent = 'Running';
+      out.innerHTML = '<div class="tiny muted">Loading real historical data…</div>';
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/coins/${encodeURIComponent(asset)}/market_chart?vs_currency=usd&days=${days}&interval=daily`);
+        if (!res.ok) throw new Error('CoinGecko historical request failed');
+        const json = await res.json();
+        const prices = (json.prices || []).map(x => x[1]);
+        if (prices.length < slow + 2) throw new Error('Not enough history returned');
+        let position = 0, entry = 0, pnl = 0, trades = 0, wins = 0;
+        for (let i = slow; i < prices.length; i++) {
+          const fPrev = sma(prices, fast, i - 1), sPrev = sma(prices, slow, i - 1);
+          const fNow = sma(prices, fast, i), sNow = sma(prices, slow, i);
+          if (fPrev == null || sPrev == null || fNow == null || sNow == null) continue;
+          if (!position && fPrev <= sPrev && fNow > sNow) { position = 1; entry = prices[i]; trades++; }
+          else if (position && fPrev >= sPrev && fNow < sNow) {
+            const ret = (prices[i] - entry) / entry;
+            pnl += ret;
+            if (ret > 0) wins++;
+            position = 0;
+          }
+        }
+        if (position) pnl += (prices.at(-1) - entry) / entry;
+        state.latestPaper = { asset, days, fast, slow, pnl, trades, wins, winRate: trades ? wins / trades : 0 };
+        out.innerHTML = `
+          <div><strong>${asset}</strong> on real CoinGecko history (${days}d)</div>
+          <div class="tiny">Fast ${fast} / Slow ${slow}</div>
+          <div class="tiny">Closed trades: ${trades}</div>
+          <div class="tiny">Approx cumulative return: <span class="${pnl >= 0 ? 'status-ok' : 'status-bad'}">${(pnl*100).toFixed(2)}%</span></div>
+          <div class="tiny">Win rate: ${(state.latestPaper.winRate*100).toFixed(1)}%</div>`;
+        status.textContent = 'Complete';
+        audit('Paper lab completed', `${asset} ${days}d`);
+      } catch (err) {
+        status.textContent = 'Error';
+        out.innerHTML = `<div class="status-bad">${err.message}</div>`;
+        audit('Paper lab failed', err.message);
+      }
+    };
+
+    document.getElementById('calcSizeBtn').onclick = () => {
+      const capital = Number(document.getElementById('capCapital').value);
+      const riskPct = Number(document.getElementById('capRiskPct').value) / 100;
+      const entry = Number(document.getElementById('capEntry').value);
+      const stop = Number(document.getElementById('capStop').value);
+      const label = document.getElementById('capLabel').value.trim();
+      const riskDollars = capital * riskPct;
+      const stopDistance = Math.abs(entry - stop);
+      if (!capital || !entry || !stopDistance) return toast('Enter valid capital, entry and stop');
+      const units = riskDollars / stopDistance;
+      const gross = units * entry;
+      state.latestSizing = { capital, riskPct, entry, stop, riskDollars, stopDistance, units, gross, label };
+      document.getElementById('capResults').innerHTML = `
+        <div><strong>${label}</strong></div>
+        <div class="tiny">Risk budget: $${riskDollars.toFixed(2)}</div>
+        <div class="tiny">Stop distance: $${stopDistance.toFixed(2)}</div>
+        <div class="tiny">Max size: <span class="mono">${units.toFixed(4)}</span> units</div>
+        <div class="tiny">Gross notional at entry: <span class="mono">$${gross.toFixed(2)}</span></div>`;
+      audit('Position size calculated', `${label} ${units.toFixed(4)} units`);
+    };
+
+    document.getElementById('pushApprovalBtn').onclick = () => {
+      if (!state.latestSizing) return toast('Calculate a position size first');
+      state.pendingPacket = {
+        id: crypto.randomUUID(),
+        label: state.latestSizing.label,
+        asset: state.latestSizing.label,
+        createdAt: new Date().toISOString(),
+        sizing: state.latestSizing,
+        paper: state.latestPaper,
+        sourceAnalysis: document.getElementById('nlpOutput').textContent,
+      };
+      document.getElementById('approvalState').innerHTML = `<div><strong>Pending:</strong> ${state.pendingPacket.label}</div><div class="tiny muted">Size packet sent to Supervising Quant gate.</div>`;
+      audit('Packet sent to approval gate', state.pendingPacket.label);
+      toast('Pending packet loaded into approval gate');
+    };
+
+    document.getElementById('approveBtn').onclick = () => {
+      if (!state.pendingPacket) return toast('No pending packet');
+      const required = ['chkEvidence','chkValidation','chkRisk','chkCompliance','chkData'];
+      const allPass = required.every(id => document.getElementById(id).checked);
+      if (!allPass) return toast('All approval criteria must be met');
+      state.pendingPacket.status = 'approved';
+      state.approvals.unshift({ ...state.pendingPacket, status: 'approved', approvedAt: new Date().toISOString() });
+      saveJson('mpqd_approvals', state.approvals);
+      document.getElementById('approvalState').innerHTML = `<div class="status-ok"><strong>Approved:</strong> ${state.pendingPacket.label}</div><div class="tiny muted">This packet is now spawnable.</div>`;
+      audit('Packet approved', state.pendingPacket.label);
+      updateMissionKPIs();
+    };
+    document.getElementById('rejectBtn').onclick = () => {
+      if (!state.pendingPacket) return toast('No pending packet');
+      document.getElementById('approvalState').innerHTML = `<div class="status-bad"><strong>Rejected:</strong> ${state.pendingPacket.label}</div>`;
+      audit('Packet rejected', state.pendingPacket.label);
+    };
+
+    document.getElementById('spawnFromApprovalBtn').onclick = () => {
+      const approved = state.approvals.find(a => a.status === 'approved');
+      if (!approved) return toast('No approved packet available to spawn');
+      const packet = seedRegistry(`Spawned pod: ${approved.label}`, approved.asset || 'asset', 'Spawned from Supervising Quant approval');
+      packet.status = 'spawned';
+      packet.origin = 'supervising-quant';
+      packet.approvalId = approved.id;
+      saveJson('mpqd_registry', state.registry);
+      renderRegistry();
+      audit('Strategy pod spawned', packet.label);
+      toast('Approved strategy pod spawned');
+    };
+
+    document.getElementById('refreshAllBtn').onclick = async () => {
+      setLiveStatus('Refreshing');
+      await renderMarketTab();
+      renderSources();
+      setLiveStatus('Ready');
+      toast('Live-source refresh complete');
+    };
+
+    document.getElementById('saveStateBtn').onclick = document.getElementById('saveStateBtn2').onclick = () => {
+      saveLayout();
+      saveJson('mpqd_registry', state.registry);
+      saveJson('mpqd_audit', state.audit);
+      saveJson('mpqd_approvals', state.approvals);
+      audit('Local state snapshot saved');
+      toast('Local desk state saved');
+    };
+
+    renderSources();
+    renderRegistry();
+    renderAudit();
+    updateMissionKPIs();
+    renderMarketTab();
+    audit('Desk initialized', 'retro operational shell loaded');
+  </script>
+</body>
+</html>
